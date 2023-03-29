@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAuthClient";
+
+import "google/protobuf/wrappers.proto";
+
+// Unary request.
+message Request {
+  // Whether Response should include username.
+  string user_name = 1;
+}
+
+message Response {
+  // Whether Response should include username.
+  bool is_auth_result = 1;
+}
+
+service AuthService {
+  // One request followed by one response.
+  rpc IsAuth(Request) returns (Response);
+}
