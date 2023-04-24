@@ -1,0 +1,3 @@
+FROM malexer/twemproxy:latest
+
+ENV REDIS_SERVERS 173.20.0.31:6373:1,173.20.0.32:6374:1,173.20.0.33:6375:1

@@ -1,3 +1,4 @@
+using AvitoWeather.Core;
 using AvitoWeather.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -5,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis.Extensions.Core.Configuration;
+using StackExchange.Redis.Extensions.Newtonsoft;
+using System.Collections.Generic;
 
 namespace AvitoWeather
 {
@@ -33,6 +37,14 @@ namespace AvitoWeather
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "AvitoWeather", Version = "v1" });
             }).AddSwaggerGenNewtonsoftSupport();
+
+            services.AddStackExchangeRedisExtensions<NewtonsoftSerializer>((options) =>
+            {
+                var settings = Configuration.GetSection("Redis").Get<RedisConfiguration>();
+                return new List<RedisConfiguration> { settings };
+            });
+
+            services.AddScoped<IWeatherService, WeatherService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

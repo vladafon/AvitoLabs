@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Grpc.Net.Client;
 using GrpcAuthClient;
+using AvitoWeather.Core;
+using Ardalis.GuardClauses;
+using Newtonsoft.Json;
 
 namespace AvitoWeather.Controllers
 {
@@ -18,15 +21,18 @@ namespace AvitoWeather.Controllers
         private readonly ILogger<WeatherController> _logger;
         private readonly Settings _settings;
         private readonly RequestMaker<WeatherApi> _requestMaker;
+        private readonly IWeatherService _weatherService;
 
         private const string CelsiusUnit = "celsius";
 
         public WeatherController(ILogger<WeatherController> logger,
             IOptionsMonitor<Settings> settingsMonitor,
-            RequestMaker<WeatherApi> requestMaker)
+            RequestMaker<WeatherApi> requestMaker,
+            IWeatherService weatherService)
         {
             _logger = logger;
             _requestMaker = requestMaker;
+            _weatherService = weatherService;
 
             _settings = settingsMonitor.CurrentValue;
         }
@@ -79,6 +85,15 @@ namespace AvitoWeather.Controllers
             //    return StatusCode(403);
             //}
 
+            var cachedWeatherJson = await _weatherService.GetFromCache(city);
+
+            if (cachedWeatherJson != null)
+            {
+                var cachedWeather = JsonConvert.DeserializeObject<WeatherData>(cachedWeatherJson);
+
+                return Ok(cachedWeather);
+            }
+
             var url = "current.json";
             var fullUrl = GetFullUrl(url);
 
@@ -89,12 +104,40 @@ namespace AvitoWeather.Controllers
 
             _logger.LogInformation("Текущая погода получена успешно");
 
-            return Ok(new WeatherData
+            var weatherData = new WeatherData
             {
                 City = result.Location.Name,
                 Temperature = result.Current.TemperatureCelsius,
                 Unit = CelsiusUnit
-            });
+            };
+
+            var weatherDataJson = JsonConvert.SerializeObject(weatherData);
+
+            await _weatherService.SaveToCache(city, weatherDataJson);
+
+            return Ok(weatherData);
+        }
+
+        [HttpPut]
+        [Route("put")]
+        public async Task<IActionResult> PutWeather([FromHeader(Name = "Own-Auth-UserName")] string ownAuthUserName, [FromBody] WeatherData weather)
+        {
+            //if (!IsAuth(ownAuthUserName))
+            //{
+            //    return StatusCode(403);
+            //}
+
+            Guard.Against.Null(weather, nameof(weather));
+            Guard.Against.NullOrWhiteSpace(weather.City, nameof(weather.City));
+            Guard.Against.NullOrWhiteSpace(weather.Unit, nameof(weather.Unit));
+
+            var weatherJson = JsonConvert.SerializeObject(weather);
+
+            await _weatherService.SaveToCache(weather.City, weatherJson);
+
+            _logger.LogInformation("Данные о погоде успешна добавлены");
+
+            return Created($"{Request.Scheme}://{Request.Host}{Request.PathBase}", weather);
         }
 
         private string GetFullUrl(string methodUrl)
