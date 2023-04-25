@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AvitoKafkaConsumer": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

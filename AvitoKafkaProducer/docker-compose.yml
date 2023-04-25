@@ -1,0 +1,15 @@
+version: '3.4'
+
+services:
+  avitokafkaproducer:
+    image: ${DOCKER_REGISTRY-}avitokafkaproducer
+    build:
+      context: .
+      dockerfile: AvitoKafkaProducer/Dockerfile
+
+  avitokafkaconsumer:
+    image: ${DOCKER_REGISTRY-}avitokafkaconsumer
+    build:
+      context: .
+      dockerfile: AvitoKafkaConsumer/Dockerfile
+
